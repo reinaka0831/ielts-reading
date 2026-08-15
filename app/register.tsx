@@ -1,3 +1,6 @@
+import { router } from "expo-router";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 import { useState } from "react";
 import {
   Alert,
@@ -7,12 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { getFirestore, doc, setDoc } from "firebase/firestore";
-import { router } from "expo-router";
-import { auth } from "../firebase";
-
-const db = getFirestore();
+import { auth, db } from "../firebase";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");

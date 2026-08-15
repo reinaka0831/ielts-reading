@@ -1,6 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import {
+  doc,
+  increment,
+  updateDoc
+} from "firebase/firestore";
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
@@ -15,6 +20,9 @@ import {
 import { fullReadingSets } from '../data/fullReadingSets';
 import { readingSets } from '../data/readingSets';
 import type { ReadingData } from '../data/types';
+import { auth, db } from "../firebase";
+
+
 
 
 const highlightText = (
@@ -483,7 +491,30 @@ export default function ReadingScreen() {
       } catch (error) {
         console.error('成績履歴の保存に失敗しました', error);
       }
+      const user = auth.currentUser;
+
+      if (user) {
+        const userRef = doc(db, "users", user.uid);
+
+        await updateDoc(userRef, {
+          totalScore: score,
+          totalQuestions: totalQuestions,
+          readingAccuracy: Math.round((score / totalQuestions) * 100),
+          lastPlayed: new Date().toISOString(),
+        });
+      }
       setTimerRunning(false);
+      if (auth.currentUser) {
+        const userRef = doc(db, "users", auth.currentUser.uid);
+
+        await updateDoc(userRef, {
+          totalScore: increment(score),
+          totalQuestions: increment(totalQuestions),
+          readingAccuracy: Math.round(
+            ((score / totalQuestions) * 100)
+          ),
+        });
+      }
       setFinished(true);
       return;
     }
@@ -507,6 +538,7 @@ export default function ReadingScreen() {
     setTimerRunning(false);
     setQuestionStartTime(null);
     setQuestionRecords([]);
+    setSessionWords([]);
   };
 
   const generateReading = () => {
@@ -1892,7 +1924,7 @@ export default function ReadingScreen() {
     autoCapitalize="none"
   />
 ) : (
-  currentQuestion.options.map((option, index) => {
+  (currentQuestion.options ?? []).map((option, index) => {
     const letter = answerLetters[index];
 
     return (
